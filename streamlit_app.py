@@ -1,47 +1,27 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import sklearn
 import requests
 import io
-import time
 
-# --- 1. ตั้งค่า Theme สีดำ-เขียว (Custom CSS) ---
+# --- 1. ตั้งค่าหน้าจอและ Theme สีเขียว-ดำ ---
 st.set_page_config(page_title="Salary Predictor Pro", layout="centered")
 
 st.markdown("""
     <style>
-    .main {
-        background-color: #000000;
-        color: #00FF00;
-    }
-    .stButton>button {
-        background-color: #00FF00;
-        color: black;
-        border-radius: 5px;
-        font-weight: bold;
-    }
-    .stSelectbox, .stSlider {
-        color: #00FF00 !important;
-    }
-    h1, h2, h3 {
-        color: #00FF00 !important;
-        font-family: 'Courier New', Courier, monospace;
-    }
-    /* ปรับแต่งกรอบ Input */
-    div[data-baseweb="select"] > div {
-        background-color: #1a1a1a !important;
-        color: #00FF00 !important;
-        border: 1px solid #00FF00;
-    }
+    .main { background-color: #000000; color: #00FF00; }
+    .stButton>button { background-color: #00FF00; color: black; width: 100%; font-weight: bold; border: none; }
+    .stSelectbox, .stSlider { color: #00FF00 !important; }
+    h1, h2, h3, p { color: #00FF00 !important; font-family: 'Courier New', monospace; }
+    div[data-baseweb="select"] > div { background-color: #1a1a1a !important; color: #00FF00 !important; border: 1px solid #00FF00; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. ฟังก์ชันโหลด Model และ Assets (ใช้ Cache) ---
+# --- 2. โหลดโมเดล (ใช้ Cache เพื่อความเร็ว) ---
 @st.cache_resource
 def load_assets():
-    # เปลี่ยน URL เป็นลิงก์ Release ของคุณ (อันนี้คือตัวอย่าง)
-    url = "https://github.com/pratchaya-loyprakhon/ProjectY2_DS_67160225_2/releases/download/v2.0/salary_model.pkl"
+    # แก้ลิงก์ URL ให้เป็นเวอร์ชันล่าสุดของคุณใน GitHub Release
+    url = "https://github.com/pratchaya-loyprakhon/ProjectY2_DS_67160225_2/releases/download/v1.0/salary_model.pkl"
     try:
         response = requests.get(url, timeout=300)
         model = joblib.load(io.BytesIO(response.content))
@@ -49,63 +29,56 @@ def load_assets():
         features_list = joblib.load('features_list.pkl')
         return model, encoders, features_list
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"โหลดโมเดลไม่สำเร็จ: {e}")
         return None, None, None
 
 model, encoders, features_list = load_assets()
 
-# --- 3. ส่วนการแสดงผล ---
+# --- 3. ส่วนหน้าเว็บ ---
 st.title("SALARY PREDICTOR v2.0")
-st.subheader("Database: salary_dataset_with_extra_feature")
+st.write("Database: salary_dataset_with_extra_feature")
 
 if model:
     with st.form("hacker_form"):
         col1, col2 = st.columns(2)
-        
         with col1:
             rating = st.slider("Company Rating", 1.0, 5.0, 4.0)
             company = st.selectbox("Company Name", encoders['Company Name'].classes_)
-            job_role = st.selectbox("Job Roles", encoders['Job Roles'].classes_) # เพิ่ม Job Role
+            # ตั้งชื่อตัวแปรให้ตรงกับที่จะใช้ใน input_dict
+            job_role_val = st.selectbox("Job Roles", encoders['Job Roles'].classes_) 
             
         with col2:
             job_title = st.selectbox("Job Title", encoders['Job Title'].classes_)
             location = st.selectbox("Location", encoders['Location'].classes_)
-            emp_status = st.selectbox("Employment Status", encoders['Employment Status'].classes_) # เพิ่ม Status
+            emp_status = st.selectbox("Employment Status", encoders['Employment Status'].classes_)
             
         submit = st.form_submit_button("RUN PREDICTION")
 
-    # --- ส่วนการประมวลผลเมื่อกดปุ่ม Predict ---
-if submit:
-    try:
-        # 1. เตรียมข้อมูล Input
-        input_dict = {
-            'Rating': rating,
-            'Company Name': encoders['Company Name'].transform([company])[0],
-            'Job Title': encoders['Job Title'].transform([job_title])[0],
-            'Location': encoders['Location'].transform([location])[0],
-            'Job Roles': encoders['Job Roles'].transform([job_role_val])[0],
-            'Employment Status': encoders['Employment Status'].transform([emp_status])[0]
-        }
-        
-        input_df = pd.DataFrame([input_dict])[features_list]
-        
-        # 2. ทำนายผล (ได้ค่าเป็นสกุลเงินรูปี ₹)
-        prediction_inr = model.predict(input_df)[0]
-        
-        # 3. แปลงเป็นเงินไทย (อัตราแลกเปลี่ยนโดยประมาณ: 1 รูปี ≈ 0.43 บาท)
-        # หมายเหตุ: คุณสามารถปรับตัวเลข 0.43 ตามค่าเงินปัจจุบันได้ครับ
-        exchange_rate = 0.43 
-        prediction_thb = prediction_inr * exchange_rate
-        
-        # 4. แสดงผลลัพธ์แบบ Hacker Green
-        st.write("---")
-        st.markdown(f"<h2 style='text-align: center; color: #00FF00;'>ประมาณการเงินเดือน:</h2>", unsafe_allow_html=True)
-        
-        # แสดงทั้งสองสกุลเงินเพื่อความชัดเจน
-        st.markdown(f"<h1 style='text-align: center; color: #00FF00; font-size: 45px;'>{prediction_thb:,.2f} บาท</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; color: #008800;'>(เทียบเท่า ₹ {prediction_inr:,.2f} รูปี)</p>", unsafe_allow_html=True)
-        
-        st.balloons()
-        
-    except Exception as e:
-        st.error(f"เกิดข้อผิดพลาด: {e}")
+    if submit:
+        try:
+            # เตรียมข้อมูลส่งให้โมเดล
+            input_dict = {
+                'Rating': rating,
+                'Company Name': encoders['Company Name'].transform([company])[0],
+                'Job Title': encoders['Job Title'].transform([job_title])[0],
+                'Location': encoders['Location'].transform([location])[0],
+                'Job Roles': encoders['Job Roles'].transform([job_role_val])[0],
+                'Employment Status': encoders['Employment Status'].transform([emp_status])[0]
+            }
+            
+            input_df = pd.DataFrame([input_dict])[features_list]
+            
+            # ทำนายและแปลงค่าเงิน (1 รูปี ≈ 0.43 บาท)
+            pred_inr = model.predict(input_df)[0]
+            pred_thb = pred_inr * 0.43
+            
+            st.write("---")
+            st.markdown("<h2 style='text-align: center;'>ประมาณการเงินเดือน:</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{pred_thb:,.2f} บาท</h1>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; opacity: 0.7;'>(₹ {pred_inr:,.2f} รูปี)</p>", unsafe_allow_html=True)
+            st.balloons()
+            
+        except Exception as e:
+            st.error(f"เกิดข้อผิดพลาด: {e}")
+else:
+    st.info("กำลังเตรียมระบบ...")
