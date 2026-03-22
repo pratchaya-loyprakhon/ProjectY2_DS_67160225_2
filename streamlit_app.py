@@ -69,7 +69,7 @@ if model:
             
             # ทำนายและแปลงค่าเงิน (1 รูปี ≈ 0.43 บาท)
             pred_inr = model.predict(input_df)[0]
-            pred_thb = pred_inr * 0.43
+            pred_thb = (pred_inr * 0.43) * 0.8
             
             st.write("---")
             st.markdown("<h2 style='text-align: center;'>ประมาณการเงินเดือน:</h2>", unsafe_allow_html=True)
