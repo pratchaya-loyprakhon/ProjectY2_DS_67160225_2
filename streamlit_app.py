@@ -21,7 +21,7 @@ st.markdown("""
 @st.cache_resource
 def load_assets():
     # แก้ลิงก์ URL ให้เป็นเวอร์ชันล่าสุดของคุณใน GitHub Release
-    url = "https://github.com/pratchaya-loyprakhon/ProjectY2_DS_67160225_2/releases/download/v1.0/salary_model.pkl"
+    url = "https://github.com/pratchaya-loyprakhon/ProjectY2_DS_67160225_2/releases/download/v2.0/salary_model.pkl"
     try:
         response = requests.get(url, timeout=300)
         model = joblib.load(io.BytesIO(response.content))
