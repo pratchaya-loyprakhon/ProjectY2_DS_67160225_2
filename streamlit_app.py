@@ -65,7 +65,7 @@ if model:
         with col1:
             rating = st.slider("Company Rating", 1.0, 5.0, 4.0)
             company = st.selectbox("Company Name", encoders['Company Name'].classes_)
-            job_role = st.selectbox("Job Role", encoders['Job Role'].classes_) # เพิ่ม Job Role
+            job_role = st.selectbox("Job Roles", encoders['Job Roles'].classes_) # เพิ่ม Job Role
             
         with col2:
             job_title = st.selectbox("Job Title", encoders['Job Title'].classes_)
@@ -82,7 +82,7 @@ if model:
                 'Company Name': encoders['Company Name'].transform([company])[0],
                 'Job Title': encoders['Job Title'].transform([job_title])[0],
                 'Location': encoders['Location'].transform([location])[0],
-                'Job Role': encoders['Job Role'].transform([job_role])[0],
+                'Job Roles': encoders['Job Roles'].transform([job_role])[0],
                 'Employment Status': encoders['Employment Status'].transform([emp_status])[0]
             }
             
