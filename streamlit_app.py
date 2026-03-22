@@ -74,29 +74,38 @@ if model:
             
         submit = st.form_submit_button("RUN PREDICTION")
 
-    if submit:
-        try:
-            # เตรียมข้อมูล (ต้องมั่นใจว่าชื่อ Key ตรงกับที่ใช้ Train)
-            input_dict = {
-                'Rating': rating,
-                'Company Name': encoders['Company Name'].transform([company])[0],
-                'Job Title': encoders['Job Title'].transform([job_title])[0],
-                'Location': encoders['Location'].transform([location])[0],
-                'Job Roles': encoders['Job Roles'].transform([job_role])[0],
-                'Employment Status': encoders['Employment Status'].transform([emp_status])[0]
-            }
-            
-            input_df = pd.DataFrame([input_dict])[features_list]
-            prediction = model.predict(input_df)[0]
-            
-            st.write("---")
-            st.markdown(f"<h2 style='text-align: center;'>ESTIMATED SALARY:</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h1 style='text-align: center; font-size: 50px;'>₹ {prediction:,.2f}</h1>", unsafe_allow_html=True)
-            st.balloons()
-            
-        except Exception as e:
-            st.error(f"Prediction Failed: {e}")
-            st.info("ตรวจสอบว่าคอลัมน์ใน features_list ตรงกับข้อมูลที่กรอกหรือไม่")
-
-else:
-    st.warning("SYSTEM INITIALIZING... PLEASE WAIT")
+    # --- ส่วนการประมวลผลเมื่อกดปุ่ม Predict ---
+if submit:
+    try:
+        # 1. เตรียมข้อมูล Input
+        input_dict = {
+            'Rating': rating,
+            'Company Name': encoders['Company Name'].transform([company])[0],
+            'Job Title': encoders['Job Title'].transform([job_title])[0],
+            'Location': encoders['Location'].transform([location])[0],
+            'Job Roles': encoders['Job Roles'].transform([job_role_val])[0],
+            'Employment Status': encoders['Employment Status'].transform([emp_status])[0]
+        }
+        
+        input_df = pd.DataFrame([input_dict])[features_list]
+        
+        # 2. ทำนายผล (ได้ค่าเป็นสกุลเงินรูปี ₹)
+        prediction_inr = model.predict(input_df)[0]
+        
+        # 3. แปลงเป็นเงินไทย (อัตราแลกเปลี่ยนโดยประมาณ: 1 รูปี ≈ 0.43 บาท)
+        # หมายเหตุ: คุณสามารถปรับตัวเลข 0.43 ตามค่าเงินปัจจุบันได้ครับ
+        exchange_rate = 0.43 
+        prediction_thb = prediction_inr * exchange_rate
+        
+        # 4. แสดงผลลัพธ์แบบ Hacker Green
+        st.write("---")
+        st.markdown(f"<h2 style='text-align: center; color: #00FF00;'>ประมาณการเงินเดือน:</h2>", unsafe_allow_html=True)
+        
+        # แสดงทั้งสองสกุลเงินเพื่อความชัดเจน
+        st.markdown(f"<h1 style='text-align: center; color: #00FF00; font-size: 45px;'>{prediction_thb:,.2f} บาท</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: #008800;'>(เทียบเท่า ₹ {prediction_inr:,.2f} รูปี)</p>", unsafe_allow_html=True)
+        
+        st.balloons()
+        
+    except Exception as e:
+        st.error(f"เกิดข้อผิดพลาด: {e}")
