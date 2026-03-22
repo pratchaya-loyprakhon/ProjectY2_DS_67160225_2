@@ -12,18 +12,19 @@ st.markdown("""
     .main { background-color: #000000; color: #00FF00; }
     .stButton>button { background-color: #00FF00; color: black; width: 100%; font-weight: bold; border: none; }
     .stSelectbox, .stSlider { color: #00FF00 !important; }
-    h1, h2, h3, p { color: #00FF00 !important; font-family: 'Courier New', monospace; }
+    h1, h2, h3, p, label { color: #00FF00 !important; font-family: 'Courier New', monospace; }
     div[data-baseweb="select"] > div { background-color: #1a1a1a !important; color: #00FF00 !important; border: 1px solid #00FF00; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. โหลดโมเดล (ใช้ Cache เพื่อความเร็ว) ---
+# --- 2. โหลดโมเดล (ใช้ Cache) ---
 @st.cache_resource
 def load_assets():
-    # แก้ลิงก์ URL ให้เป็นเวอร์ชันล่าสุดของคุณใน GitHub Release
-    url = "https://github.com/pratchaya-loyprakhon/ProjectY2_DS_67160225_2/releases/download/v2.0/salary_model.pkl"
+    # ตรวจสอบลิงก์ Release ของคุณให้ถูกต้อง
+    url = "https://github.com/pratchaya-loyprakhon/ProjectY2_DS_67160225_2/releases/download/v3.0/salary_model.pkl"
     try:
         response = requests.get(url, timeout=300)
+        response.raise_for_status()
         model = joblib.load(io.BytesIO(response.content))
         encoders = joblib.load('encoders.pkl')
         features_list = joblib.load('features_list.pkl')
@@ -34,9 +35,9 @@ def load_assets():
 
 model, encoders, features_list = load_assets()
 
-# --- 3. ส่วนหน้าเว็บ ---
+# --- 3. ส่วนการแสดงผล ---
 st.title("SALARY PREDICTOR v2.0")
-st.write("Database: salary_dataset_with_extra_feature")
+st.write("ระบบทำนายเงินเดือนที่ผ่านการจัดการ Outliers และเปรียบเทียบโมเดลแล้ว")
 
 if model:
     with st.form("hacker_form"):
@@ -44,7 +45,6 @@ if model:
         with col1:
             rating = st.slider("Company Rating", 1.0, 5.0, 4.0)
             company = st.selectbox("Company Name", encoders['Company Name'].classes_)
-            # ตั้งชื่อตัวแปรให้ตรงกับที่จะใช้ใน input_dict
             job_role_val = st.selectbox("Job Roles", encoders['Job Roles'].classes_) 
             
         with col2:
@@ -56,7 +56,6 @@ if model:
 
     if submit:
         try:
-            # เตรียมข้อมูลส่งให้โมเดล
             input_dict = {
                 'Rating': rating,
                 'Company Name': encoders['Company Name'].transform([company])[0],
@@ -75,10 +74,10 @@ if model:
             st.write("---")
             st.markdown("<h2 style='text-align: center;'>ประมาณการเงินเดือน:</h2>", unsafe_allow_html=True)
             st.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{pred_thb:,.2f} บาท</h1>", unsafe_allow_html=True)
-            st.markdown(f"<p style='text-align: center; opacity: 0.7;'>(₹ {pred_inr:,.2f} รูปี)</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; opacity: 0.7;'>(เทียบเท่า ₹ {pred_inr:,.2f} รูปี)</p>", unsafe_allow_html=True)
             st.balloons()
             
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาด: {e}")
 else:
-    st.info("กำลังเตรียมระบบ...")
+    st.info("ระบบกำลังเตรียมความพร้อม...")
